@@ -12,7 +12,7 @@ from questdb.ingress import Sender, IngressError
 
 streams = {
     '#moonmoon': {'stream': None, 'is_live': False},
-    # '#dougdoug': {'stream': None, 'is_live': False, 'start_time': None}
+    # '#new_username': {'stream': None, 'is_live': False, 'start_time': None}
 }
 
 CLIENT_ID = private_secrets.client_id
@@ -46,7 +46,7 @@ def send_transcript(data, host: str = private_secrets.databaseIPV4, port: int = 
     try:
         with Sender(host, port) as sender:
             sender.row(
-                'transcript_temp',
+                'transcript',
                 symbols={
                     'stream_name': str(data['stream_name']),
                 },
@@ -63,11 +63,8 @@ def send_transcript(data, host: str = private_secrets.databaseIPV4, port: int = 
 
 if __name__ == "__main__":
     stream = None
-
-    i = 0
-
     while True:
-        if time.time() - last_check > 5:
+        if time.time() - last_check > 15:
             for key in streams:
                 stream_url = "https://www.twitch.tv/" + key[1:]
                 api_url = f"https://api.twitch.tv/helix/streams?user_login={key[1:]}"
@@ -105,6 +102,5 @@ if __name__ == "__main__":
                 db_time = datetime.datetime(year=start_datetime.year, month=start_datetime.month, day=start_datetime.day, hour=transcript_offset.seconds//3600, minute=(transcript_offset.seconds//60)%60, second=(transcript_offset.seconds%3600)%60, microsecond=0, tzinfo=pytz.utc)
 
                 if transcript['text'] != "":
-                    print(f'{s[1:]} @ {db_time}:  {transcript["text"]}')
                     send_transcript({'ts': db_time, 'stream_name': s, 'transcript': transcript['text']})
 
