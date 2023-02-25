@@ -102,5 +102,6 @@ if __name__ == "__main__":
                 db_time = datetime.datetime(year=start_datetime.year, month=start_datetime.month, day=start_datetime.day, hour=transcript_offset.seconds//3600, minute=(transcript_offset.seconds//60)%60, second=(transcript_offset.seconds%3600)%60, microsecond=0, tzinfo=pytz.utc)
 
                 if transcript['text'] != "":
+                    print(transcript['text'])
                     send_transcript({'ts': db_time, 'stream_name': s, 'transcript': transcript['text']})
 
