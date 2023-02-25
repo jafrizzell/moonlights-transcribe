@@ -96,7 +96,9 @@ if __name__ == "__main__":
                 transcript_offset = transcript_offset - datetime.timedelta(microseconds=transcript_time.microsecond)
                 indata = streams[s]['stream'].grab()
                 indata_transformed = indata.flatten().astype(np.float32) / 32768.0
-                initial_prompt = f"This is a transcript from {s}'s Twitch Stream. They often say the name of Twitch Emotes out loud. Do not censor inappropriate words."
+                initial_prompt = f"This is a transcript from {s}'s Twitch Stream. They often say the name of Twitch Emotes out loud like 'GIGA', 'monkagiga', 'lmao', etc., " \
+                                 f"and responds to messages sent in their chat. They also makes sound affects with their mouth." \
+                                 f"Do not censor any words that are said. They are also very casual in their speech."
                 transcript = model.transcribe(indata_transformed, language=LANGUAGE, initial_prompt=initial_prompt, no_speech_threshold=0.5, logprob_threshold=None)
                 start_datetime = streams[s]['start_time']
                 db_time = datetime.datetime(year=start_datetime.year, month=start_datetime.month, day=start_datetime.day, hour=transcript_offset.seconds//3600, minute=(transcript_offset.seconds//60)%60, second=(transcript_offset.seconds%3600)%60, microsecond=0, tzinfo=pytz.utc)
