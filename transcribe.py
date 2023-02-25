@@ -46,7 +46,7 @@ def send_transcript(data, host: str = private_secrets.databaseIPV4, port: int = 
     try:
         with Sender(host, port) as sender:
             sender.row(
-                'transcript',
+                'transcripts',
                 symbols={
                     'stream_name': str(data['stream_name']),
                 },
