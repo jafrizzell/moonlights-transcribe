@@ -30,7 +30,13 @@ headers = {
 }
 
 # Get oauth token
-r1 = requests.post("https://id.twitch.tv/oauth2/token", params=headers, timeout=10)
+while True:
+    try:
+        r1 = requests.post("https://id.twitch.tv/oauth2/token", params=headers, timeout=10)
+        break
+    except requests.exceptions.ReadTimeout:
+        print("Read Timeout. Retrying...")
+        continue
 
 token = r1.json()['access_token']
 
@@ -78,7 +84,11 @@ if __name__ == "__main__":
             for key in streams:
                 stream_url = f"https://www.twitch.tv/{key[1:]}"
                 api_url = f"https://api.twitch.tv/helix/streams?user_login={key[1:]}"
-                r = requests.get(api_url, headers=h, timeout=10)  # GET stream status. Will return {'data': []} if not live
+                try:
+                    r = requests.get(api_url, headers=h, timeout=10)  # GET stream status. Will return {'data': []} if not live
+                except requests.exceptions.ReadTimeout:
+                    r = {'data': []}
+                    continue
                 if len(r.json()['data']) > 0:
                     # Assign stream start time
                     start_time = datetime.datetime.strptime(r.json()['data'][0]['started_at'], '%Y-%m-%dT%H:%M:%SZ')
