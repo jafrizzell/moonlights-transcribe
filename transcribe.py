@@ -1,15 +1,16 @@
+import datetime
 import sys
 import time
-import datetime
+
 import numpy as np
+import private_secrets
 import pytz
 import requests
 import whisper
-import private_secrets
 # create a file "private_secrets.py" in the root directory
 # Store your Twitch "client_id", "client_secret", and "databaseIPV4"
+from questdb.ingress import IngressError, Sender
 from twitchrealtimehandler import TwitchAudioGrabber
-from questdb.ingress import Sender, IngressError
 
 # Copy the line and change username to add streamers
 # Username should be preceded by "#"
@@ -29,13 +30,19 @@ headers = {
 }
 
 # Get oauth token
-r1 = requests.post("https://id.twitch.tv/oauth2/token", params=headers)
+while True:
+    try:
+        r1 = requests.post("https://id.twitch.tv/oauth2/token", params=headers, timeout=10)
+        break
+    except requests.exceptions.ReadTimeout:
+        print("Read Timeout. Retrying...")
+        continue
 
 token = r1.json()['access_token']
 
 h = {
     "Client-Id": CLIENT_ID,
-    "Authorization": 'Bearer '+token,
+    "Authorization": f'Bearer {token}'
 }
 
 # Whisper settings
@@ -46,7 +53,7 @@ LANGUAGE = "en"
 model = whisper.load_model(MODEL_TYPE)
 
 # Initialize variable
-last_check = 0
+LAST_CHECK = 0
 
 
 # If you don't have a database setup, comment out this function and the function call (line 117)
@@ -70,14 +77,18 @@ def send_transcript(data, host: str = private_secrets.databaseIPV4, port: int = 
 
 
 if __name__ == "__main__":
-    stream = None
+    STREAM = None
     while True:
-        if time.time() - last_check > 15:  # Check if streams are live every 15 seconds.
+        if time.time() - LAST_CHECK > 15:  # Check if streams are live every 15 seconds.
             # You may need to increase this if you have a large number of streams due to API Rate Limits
             for key in streams:
-                stream_url = "https://www.twitch.tv/" + key[1:]
+                stream_url = f"https://www.twitch.tv/{key[1:]}"
                 api_url = f"https://api.twitch.tv/helix/streams?user_login={key[1:]}"
-                r = requests.get(api_url, headers=h)  # GET stream status. Will return {'data': []} if not live
+                try:
+                    r = requests.get(api_url, headers=h, timeout=10)  # GET stream status. Will return {'data': []} if not live
+                except requests.exceptions.ReadTimeout:
+                    r = {'data': []}
+                    continue
                 if len(r.json()['data']) > 0:
                     # Assign stream start time
                     start_time = datetime.datetime.strptime(r.json()['data'][0]['started_at'], '%Y-%m-%dT%H:%M:%SZ')
@@ -97,11 +108,10 @@ if __name__ == "__main__":
                             dtype=np.int16
                         )
                 # Handle stream going from "Live" -> "Not Live"
-                else:
-                    if streams[key]['is_live']:  # Extra logic to prevent unnecessary assignments
-                        streams[key]['is_live'] = False
-                        streams[key]['stream'] = None
-                        streams[key]['start_time'] = None
+                elif streams[key]['is_live']:  # Extra logic to prevent unnecessary assignments
+                    streams[key]['is_live'] = False
+                    streams[key]['stream'] = None
+                    streams[key]['start_time'] = None
 
         # Loop through streams, capture 10 seconds of audio from the ones which are live
         for s in streams:
@@ -136,4 +146,3 @@ if __name__ == "__main__":
 
                     # Send transcription to database. If no database configured, comment line out
                     send_transcript({'ts': db_time, 'stream_name': s, 'transcript': transcript['text']})
-
