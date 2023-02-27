@@ -1,3 +1,4 @@
+import censored_words
 import datetime
 import sys
 import time
@@ -15,7 +16,7 @@ from twitchrealtimehandler import TwitchAudioGrabber
 # Copy the line and change username to add streamers
 # Username should be preceded by "#"
 streams = {
-    '#moonmoon': {'stream': None, 'is_live': False},
+    '#moonmoon': {'stream': None, 'is_live': False, 'prev_transcript': ''},
     # '#new_username': {'stream': None, 'is_live': False, 'start_time': None}
 }
 
@@ -131,18 +132,22 @@ if __name__ == "__main__":
                                  f"and responds to messages sent in their chat. They also makes sound affects with their mouth." \
                                  f"Do not censor any words that are said, except for racial slurs. They are also very casual in their speech." \
                                  f"There will often be gameplay sounds in the background - avoid transcribing these to the best of your ability."
-                transcript = model.transcribe(indata_transformed, language=LANGUAGE, initial_prompt=initial_prompt, no_speech_threshold=0.5, logprob_threshold=None)
+                transcript = model.transcribe(indata_transformed, language=LANGUAGE, initial_prompt=initial_prompt, no_speech_threshold=0.3, logprob_threshold=None)
                 start_datetime = streams[s]['start_time']
                 # Join relative stream timestamp with the year-month-date from the start time
                 db_time = datetime.datetime(year=start_datetime.year, month=start_datetime.month, day=start_datetime.day, hour=transcript_offset.seconds//3600, minute=(transcript_offset.seconds//60)%60, second=(transcript_offset.seconds%3600)%60, microsecond=0, tzinfo=pytz.utc)
                 db_time = db_time + datetime.timedelta(hours=-6)  # Again, adjust this to your UTC offset
 
                 # Add any transcription filtering in this if statement.
-                # e.g. Filter racial slurs (monkaGIGA), remove Whisper hallucinations (google it)
-                if transcript['text'] != "":
+                # e.g. Filter racial slurs, remove Whisper hallucinations (google it)
+                if transcript['text'] != "" and transcript['text'] not in streams[s]['prev_transcript']:
+                    for i in censored_words.CENSOR_WORDS:
+                        if transcript['text'].lower() not in i:
+                            streams[s]['prev_transcript'] = transcript['text']
+                            # Print result for visualization. Recommend comment out for production deployment
+                            # print({'ts': db_time, 'stream_name': s, 'transcript': transcript['text']})
+                            # print(db_time, transcript['text'])
+                            # Send transcription to database. If no database configured, comment line out
+                            send_transcript({'ts': db_time, 'stream_name': s, 'transcript': transcript['text']})
 
-                    # Print result for visualization. Recommend comment out for production deployment
-                    # print({'ts': db_time, 'stream_name': s, 'transcript': transcript['text']})
 
-                    # Send transcription to database. If no database configured, comment line out
-                    send_transcript({'ts': db_time, 'stream_name': s, 'transcript': transcript['text']})
