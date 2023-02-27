@@ -143,7 +143,7 @@ if __name__ == "__main__":
                 clean = True
                 if transcript['text'] != "" and transcript['text'] not in streams[s]['prev_transcript']:
                     for i in censored_words.CENSOR_WORDS:
-                        if transcript['text'].lower() in i:
+                        if i in transcript['text'].lower():
                             clean = False
                             break
                     if clean:
