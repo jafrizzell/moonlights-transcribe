@@ -140,14 +140,18 @@ if __name__ == "__main__":
 
                 # Add any transcription filtering in this if statement.
                 # e.g. Filter racial slurs, remove Whisper hallucinations (google it)
+                clean = True
                 if transcript['text'] != "" and transcript['text'] not in streams[s]['prev_transcript']:
                     for i in censored_words.CENSOR_WORDS:
-                        if transcript['text'].lower() not in i:
-                            streams[s]['prev_transcript'] = transcript['text']
-                            # Print result for visualization. Recommend comment out for production deployment
-                            # print({'ts': db_time, 'stream_name': s, 'transcript': transcript['text']})
-                            # print(db_time, transcript['text'])
-                            # Send transcription to database. If no database configured, comment line out
-                            send_transcript({'ts': db_time, 'stream_name': s, 'transcript': transcript['text']})
+                        if transcript['text'].lower() in i:
+                            clean = False
+                            break
+                    if clean:
+                        streams[s]['prev_transcript'] = transcript['text']
+                        # Print result for visualization. Recommend comment out for production deployment
+                        # print({'ts': db_time, 'stream_name': s, 'transcript': transcript['text']})
+                        # print(db_time, transcript['text'])
+                        # Send transcription to database. If no database configured, comment line out
+                        send_transcript({'ts': db_time, 'stream_name': s, 'transcript': transcript['text']})
 
 
