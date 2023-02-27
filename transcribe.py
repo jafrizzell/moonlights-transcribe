@@ -16,7 +16,7 @@ from twitchrealtimehandler import TwitchAudioGrabber
 # Copy the line and change username to add streamers
 # Username should be preceded by "#"
 streams = {
-    '#moonmoon': {'stream': None, 'is_live': False, 'prev_transcript': '', 'prev_transcript_time': 0, 'NO_SPEECH_PROB': 0.5},
+    '#moonmoon': {'stream': None, 'is_live': False, 'prev_transcript': '', 'prev_transcript_time': datetime.datetime.now(), 'NO_SPEECH_PROB': 0.5},
     # '#new_username': {'stream': None, 'is_live': False, 'start_time': None}
 }
 
@@ -122,7 +122,7 @@ if __name__ == "__main__":
 
                 #  Sometimes the whisper model will get stuck producing no transcription.
                 #  In these cases, we turn up the no speech threshold to try and reel it back in
-                if transcript_time - streams[s]['prev_transcript_time'] > 240:
+                if transcript_time - streams[s]['prev_transcript_time'] > datetime.timedelta(minutes=4):
                     streams[s]['NO_SPEECH_PROB'] = 0.8
                 elif streams[s]['NO_SPEECH_PROB'] == 0.8:
                     #  After the model starts producing again, reset the no_speech_threshold to its default value
