@@ -16,7 +16,7 @@ from twitchrealtimehandler import TwitchAudioGrabber
 # Copy the line and change username to add streamers
 # Username should be preceded by "#"
 streams = {
-    '#moonmoon': {'stream': None, 'is_live': False, 'prev_transcript': ''},
+    '#moonmoon': {'stream': None, 'is_live': False, 'prev_transcript': '', 'prev_transcript_time': 0, 'NO_SPEECH_PROB': 0.5},
     # '#new_username': {'stream': None, 'is_live': False, 'start_time': None}
 }
 
@@ -120,6 +120,14 @@ if __name__ == "__main__":
                 # Assign transcript time at start of function to avoid delay due to Whisper compute time
                 transcript_time = datetime.datetime.now()
 
+                #  Sometimes the whisper model will get stuck producing no transcription.
+                #  In these cases, we turn up the no speech threshold to try and reel it back in
+                if transcript_time - streams[s]['prev_transcript_time'] > 240:
+                    streams[s]['NO_SPEECH_PROB'] = 0.8
+                elif streams[s]['NO_SPEECH_PROB'] == 0.8:
+                    #  After the model starts producing again, reset the no_speech_threshold to its default value
+                    streams[s]['NO_SPEECH_PROB'] = 0.5
+
                 # Compute relative timestamp. Assign microseconds to 0
                 transcript_offset = transcript_time - streams[s]['start_time']
                 transcript_offset = transcript_offset - datetime.timedelta(microseconds=transcript_time.microsecond)
@@ -128,11 +136,11 @@ if __name__ == "__main__":
                 indata_transformed = indata.flatten().astype(np.float32) / 32768.0  # Idk why this is necessary, but it is
 
                 # Adjust input prompt to help model capture edge-case words (Twitch emotes, in-game terms, etc.)
-                initial_prompt = f"This is a transcript from {s}'s Twitch Stream. They often say the name of Twitch Emotes out loud like 'GIGA', 'monkagiga', 'naur!' instead of 'no!', etc., " \
+                initial_prompt = f"This is a transcript from {s}'s Twitch Stream. They often say the name of Twitch Emotes out loud like 'GIGA', 'monkagiga', 'of hell', etc., " \
                                  f"and responds to messages sent in their chat. They also makes sound affects with their mouth." \
                                  f"Do not censor any words that are said, except for racial slurs. They are also very casual in their speech." \
                                  f"There will often be gameplay sounds in the background - avoid transcribing these to the best of your ability."
-                transcript = model.transcribe(indata_transformed, language=LANGUAGE, initial_prompt=initial_prompt, no_speech_threshold=0.3, logprob_threshold=None)
+                transcript = model.transcribe(indata_transformed, language=LANGUAGE, initial_prompt=initial_prompt, no_speech_threshold=streams[s]['NO_SPEECH_PROB'], logprob_threshold=None, fp16=False)
                 start_datetime = streams[s]['start_time']
                 # Join relative stream timestamp with the year-month-date from the start time
                 db_time = datetime.datetime(year=start_datetime.year, month=start_datetime.month, day=start_datetime.day, hour=transcript_offset.seconds//3600, minute=(transcript_offset.seconds//60)%60, second=(transcript_offset.seconds%3600)%60, microsecond=0, tzinfo=pytz.utc)
@@ -140,17 +148,17 @@ if __name__ == "__main__":
 
                 # Add any transcription filtering in this if statement.
                 # e.g. Filter racial slurs, remove Whisper hallucinations (google it)
-                clean = True
+                CLEAN = True
                 if transcript['text'] != "" and transcript['text'] not in streams[s]['prev_transcript']:
                     for i in censored_words.CENSOR_WORDS:
                         if i in transcript['text'].lower():
-                            clean = False
+                            CLEAN = False
                             break
-                    if clean:
+                    if CLEAN:
                         streams[s]['prev_transcript'] = transcript['text']
+                        streams[s]['prev_transcript_time'] = transcript_time
                         # Print result for visualization. Recommend comment out for production deployment
                         # print({'ts': db_time, 'stream_name': s, 'transcript': transcript['text']})
-                        # print(db_time, transcript['text'])
                         # Send transcription to database. If no database configured, comment line out
                         send_transcript({'ts': db_time, 'stream_name': s, 'transcript': transcript['text']})
 
