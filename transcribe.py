@@ -59,8 +59,8 @@ LAST_CHECK = 0
 
 
 def format_transcript(text):
-    output = ". ".join([i.strip() for i in text.split(".")])  # ensure that all periods are followed by a space
-    output = re.sub(r'\.\s+\.','..', output)  # strip whitespace between ellipses (created from above line)
+    output = " ".join(re.sub(r'([.?!])', r'\1 ', text).split())  # Ensure that all punctuation is followed by a space
+    output = re.sub(r'\.\s+\.\s+\.','...', output)  # strip whitespace between ellipses (created from above line)
     output = re.sub(r's\*\*\*|s\*\*t', 'shit', output)  # uncensor "s***" or "s**t"
     output = re.sub(r'f\*\*\*|f\*\*k', 'fuck', output)  # uncensor "f***" or "f**k"
     return output
@@ -111,7 +111,7 @@ if __name__ == "__main__":
                         streams[key]['stream'] = TwitchAudioGrabber(
                             twitch_url=stream_url,
                             blocking=True,  # wait until a segment is available
-                            segment_length=10,  # segment length in seconds
+                            segment_length=20,  # segment length in seconds
                             rate=16000,  # sampling rate of the audio
                             channels=1,  # number of channels
                             # quality of the audio could be [np.int16, np.int32, np.float32, np.float64]
