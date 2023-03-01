@@ -1,9 +1,9 @@
-import censored_words
 import datetime
 import re
 import sys
 import time
 
+import censored_words
 import numpy as np
 import private_secrets
 import pytz
@@ -82,8 +82,8 @@ def send_transcript(data, host: str = private_secrets.databaseIPV4, port: int = 
             )
             sender.flush()
 
-    except IngressError as e:
-        sys.stderr.write(f'Got error: {e}\n')
+    except IngressError as error:
+        sys.stderr.write(f'Got error: {error}\n')
 
 
 if __name__ == "__main__":
