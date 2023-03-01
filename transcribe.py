@@ -59,10 +59,10 @@ LAST_CHECK = 0
 
 
 def format_transcript(text: str) -> str:
-    output = " ".join(re.sub(r'([.?!])', r'\1 ', text).split())  # Ensure that all punctuation is followed by a space
-    output = re.sub(r'\.\s+\.\s+\.','...', output)  # strip whitespace between ellipses (created from above line)
-    output = re.sub(r's\*\*\*|s\*\*t', 'shit', output)  # uncensor "s***" or "s**t"
-    output = re.sub(r'f\*\*\*|f\*\*k', 'fuck', output)  # uncensor "f***" or "f**k"
+    output = " ".join(re.sub(r'([.?!])', r'\1 ', text, flags=re.IGNORECASE).split())  # Ensure that all punctuation is followed by a space
+    output = re.sub(r'\.\s+\.\s+\.','...', output, flags=re.IGNORECASE)  # strip whitespace between ellipses (created from above line)
+    output = re.sub(r's\*\*\*|s\*\*t', 'shit', output, flags=re.IGNORECASE)  # uncensor "s***" or "s**t"
+    output = re.sub(r'f\*\*\*|f\*\*k', 'fuck', output, flags=re.IGNORECASE)  # uncensor "f***" or "f**k"
     return output
 
 
@@ -171,5 +171,4 @@ if __name__ == "__main__":
                         # print({'ts': db_time, 'stream_name': s, 'transcript': transcript['text']})
                         # Send transcription to database. If no database configured, comment line out
                         send_transcript({'ts': db_time, 'stream_name': key, 'transcript': formatted_text})
-
 
