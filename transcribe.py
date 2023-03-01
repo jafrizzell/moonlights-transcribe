@@ -1,5 +1,6 @@
 import censored_words
 import datetime
+import re
 import sys
 import time
 
@@ -55,6 +56,14 @@ model = whisper.load_model(MODEL_TYPE)
 
 # Initialize variable
 LAST_CHECK = 0
+
+
+def format_transcript(text):
+    output = ". ".join([i.strip() for i in text.split(".")])  # ensure that all periods are followed by a space
+    output = re.sub(r'\.\s+\.','..', output)  # strip whitespace between ellipses (created from above line)
+    output = re.sub(r's\*\*\*|s\*\*t', 'shit', output)  # uncensor "s***" or "s**t"
+    output = re.sub(r'f\*\*\*|f\*\*k', 'fuck', output)  # uncensor "f***" or "f**k"
+    return output
 
 
 # If you don't have a database setup, comment out this function and the function call (line 117)
@@ -137,7 +146,7 @@ if __name__ == "__main__":
 
                 # Adjust input prompt to help model capture edge-case words (Twitch emotes, in-game terms, etc.)
                 initial_prompt = f"This is a transcript from {s}'s Twitch Stream. They often say the name of Twitch Emotes out loud like 'GIGA', 'monkagiga', 'of hell', etc., " \
-                                 f"and responds to messages sent in their chat. They also makes sound affects with their mouth." \
+                                 f"and respond to messages sent in their chat. They also make sound affects with their mouth." \
                                  f"Do not censor any words that are said, except for racial slurs. They are also very casual in their speech." \
                                  f"There will often be gameplay sounds in the background - avoid transcribing these to the best of your ability."
                 transcript = model.transcribe(indata_transformed, language=LANGUAGE, initial_prompt=initial_prompt, no_speech_threshold=streams[s]['NO_SPEECH_PROB'], logprob_threshold=None, fp16=False)
@@ -150,16 +159,17 @@ if __name__ == "__main__":
                 # e.g. Filter racial slurs, remove Whisper hallucinations (google it)
                 CLEAN = True
                 if transcript['text'] != "" and transcript['text'] not in streams[s]['prev_transcript']:
-                    for i in censored_words.CENSOR_WORDS:
-                        if i in transcript['text'].lower():
+                    for i in censored_words.CENSOR_WORDS:  # there's probably a better way to do this, maybe with regex?
+                        if i in transcript['text'].lower():  # want to ensure that censorship is case-insensitive
                             CLEAN = False
                             break
                     if CLEAN:
                         streams[s]['prev_transcript'] = transcript['text']
                         streams[s]['prev_transcript_time'] = transcript_time
+                        formatted_text = format_transcript(transcript['text'])
                         # Print result for visualization. Recommend comment out for production deployment
                         # print({'ts': db_time, 'stream_name': s, 'transcript': transcript['text']})
                         # Send transcription to database. If no database configured, comment line out
-                        send_transcript({'ts': db_time, 'stream_name': s, 'transcript': transcript['text']})
+                        send_transcript({'ts': db_time, 'stream_name': s, 'transcript': formatted_text})
 
 
