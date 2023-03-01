@@ -25,7 +25,7 @@ model = whisper.load_model(MODEL_TYPE)
 # Username should be preceded by "#"
 streams = {
     '#moonmoon': {'stream': None, 'is_live': False, 'model': model, 'prev_transcript': '', 'prev_transcript_time': datetime.datetime.now(), 'NO_SPEECH_PROB': 0.5},
-    '#dougdoug': {'stream': None, 'is_live': False, 'model': model, 'prev_transcript': '', 'prev_transcript_time': datetime.datetime.now(), 'NO_SPEECH_PROB': 0.5},
+    # '#dougdoug': {'stream': None, 'is_live': False, 'model': model, 'prev_transcript': '', 'prev_transcript_time': datetime.datetime.now(), 'NO_SPEECH_PROB': 0.5},
 
     # '#new_username': {'stream': None, 'is_live': False, 'start_time': None}
 }
