@@ -16,7 +16,7 @@ from twitchrealtimehandler import TwitchAudioGrabber
 
 # Copy the line and change username to add streamers
 # Username should be preceded by "#"
-stream = {
+streams = {
     '#moonmoon': {'stream': None, 'is_live': False, 'prev_transcript': '', 'prev_transcript_time': datetime.datetime.now(), 'NO_SPEECH_PROB': 0.5},
     # '#new_username': {'stream': None, 'is_live': False, 'start_time': None}
 }
@@ -91,7 +91,7 @@ if __name__ == "__main__":
     while True:
         if time.time() - LAST_CHECK > 15:  # Check if streams are live every 15 seconds.
             # You may need to increase this if you have a large number of streams due to API Rate Limits
-            for key, stream in stream.items():
+            for key, stream in streams.items():
                 stream_url = f"https://www.twitch.tv/{key[1:]}"
                 api_url = f"https://api.twitch.tv/helix/streams?user_login={key[1:]}"
                 try:
@@ -124,7 +124,7 @@ if __name__ == "__main__":
                     stream['start_time'] = None
 
         # Loop through streams, capture 10 seconds of audio from the ones which are live
-        for key, stream in stream.items():
+        for key, stream in streams.items():
             if stream['is_live']:
                 # Assign transcript time at start of function to avoid delay due to Whisper compute time
                 transcript_time = datetime.datetime.now()
