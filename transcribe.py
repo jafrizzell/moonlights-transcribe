@@ -14,10 +14,19 @@ import whisper
 from questdb.ingress import IngressError, Sender
 from twitchrealtimehandler import TwitchAudioGrabber
 
+# Whisper settings
+MODEL_TYPE = "base.en"
+# the model used for transcription. https://github.com/openai/whisper#available-models-and-languages
+LANGUAGE = "en"
+# pre-set the language to avoid autodetection
+model = whisper.load_model(MODEL_TYPE)
+
 # Copy the line and change username to add streamers
 # Username should be preceded by "#"
 streams = {
-    '#moonmoon': {'stream': None, 'is_live': False, 'prev_transcript': '', 'prev_transcript_time': datetime.datetime.now(), 'NO_SPEECH_PROB': 0.5},
+    '#moonmoon': {'stream': None, 'is_live': False, 'model': model, 'prev_transcript': '', 'prev_transcript_time': datetime.datetime.now(), 'NO_SPEECH_PROB': 0.5},
+    '#dougdoug': {'stream': None, 'is_live': False, 'model': model, 'prev_transcript': '', 'prev_transcript_time': datetime.datetime.now(), 'NO_SPEECH_PROB': 0.5},
+
     # '#new_username': {'stream': None, 'is_live': False, 'start_time': None}
 }
 
@@ -46,13 +55,6 @@ h = {
     "Client-Id": CLIENT_ID,
     "Authorization": f'Bearer {token}'
 }
-
-# Whisper settings
-MODEL_TYPE = "base.en"
-# the model used for transcription. https://github.com/openai/whisper#available-models-and-languages
-LANGUAGE = "en"
-# pre-set the language to avoid autodetection
-model = whisper.load_model(MODEL_TYPE)
 
 # Initialize variable
 LAST_CHECK = 0
@@ -149,7 +151,7 @@ if __name__ == "__main__":
                                  f"and respond to messages sent in their chat. They also make sound affects with their mouth." \
                                  f"Do not censor any words that are said, except for racial slurs. They are also very casual in their speech." \
                                  f"There will often be gameplay sounds in the background - avoid transcribing these to the best of your ability."
-                transcript = model.transcribe(indata_transformed, language=LANGUAGE, initial_prompt=initial_prompt, no_speech_threshold=streams[s]['NO_SPEECH_PROB'], logprob_threshold=None, fp16=False)
+                transcript = streams[s]['model'].transcribe(indata_transformed, language=LANGUAGE, initial_prompt=initial_prompt, no_speech_threshold=streams[s]['NO_SPEECH_PROB'], logprob_threshold=None, fp16=False)
                 start_datetime = streams[s]['start_time']
                 # Join relative stream timestamp with the year-month-date from the start time
                 db_time = datetime.datetime(year=start_datetime.year, month=start_datetime.month, day=start_datetime.day, hour=transcript_offset.seconds//3600, minute=(transcript_offset.seconds//60)%60, second=(transcript_offset.seconds%3600)%60, microsecond=0, tzinfo=pytz.utc)
