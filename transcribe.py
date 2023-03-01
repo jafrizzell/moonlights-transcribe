@@ -111,7 +111,7 @@ if __name__ == "__main__":
                         streams[key]['stream'] = TwitchAudioGrabber(
                             twitch_url=stream_url,
                             blocking=True,  # wait until a segment is available
-                            segment_length=20,  # segment length in seconds
+                            segment_length=10,  # segment length in seconds
                             rate=16000,  # sampling rate of the audio
                             channels=1,  # number of channels
                             # quality of the audio could be [np.int16, np.int32, np.float32, np.float64]
