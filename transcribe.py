@@ -168,7 +168,7 @@ if __name__ == "__main__":
                         stream['prev_transcript_time'] = transcript_time
                         formatted_text = format_transcript(transcript['text'])
                         # Print result for visualization. Recommend comment out for production deployment
-                        # print({'ts': db_time, 'stream_name': s, 'transcript': transcript['text']})
+                        # print({'ts': db_time, 'stream_name': key, 'transcript': transcript['text']})
                         # Send transcription to database. If no database configured, comment line out
                         send_transcript({'ts': db_time, 'stream_name': key, 'transcript': formatted_text})
 
