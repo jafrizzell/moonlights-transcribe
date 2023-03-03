@@ -68,10 +68,11 @@ def format_transcript(text: str) -> str:
 
 # If you don't have a database setup, comment out this function and the function call (line 117)
 def send_transcript(data, host: str = private_secrets.databaseIPV4, port: int = 9009) -> None:
+    print(data['transcript'])
     try:
         with Sender(host, port) as sender:
             sender.row(
-                'transcripts',  # table name
+                'transcripts_temp',  # table name
                 symbols={
                     'stream_name': str(data['stream_name']),
                 },
