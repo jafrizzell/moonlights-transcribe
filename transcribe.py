@@ -96,12 +96,13 @@ if __name__ == "__main__":
                 api_url = f"https://api.twitch.tv/helix/streams?user_login={key[1:]}"
                 try:
                     r = requests.get(api_url, headers=h, timeout=10)  # GET stream status. Will return {'data': []} if not live
+                    r = r.json()
                 except requests.exceptions.ReadTimeout:
                     r = {'data': []}
                     continue
-                if len(r.json()['data']) > 0:
+                if len(r['data']) > 0:
                     # Assign stream start time
-                    start_time = datetime.datetime.strptime(r.json()['data'][0]['started_at'], '%Y-%m-%dT%H:%M:%SZ')
+                    start_time = datetime.datetime.strptime(r['data'][0]['started_at'], '%Y-%m-%dT%H:%M:%SZ')
                     # Offset start time to local timezone
                     start_time = start_time + datetime.timedelta(hours=-6)  # change this to your UTC offset (negative = western hemisphere)
                     stream['start_time'] = start_time
