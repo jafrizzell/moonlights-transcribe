@@ -9,6 +9,7 @@ import private_secrets
 import pytz
 import requests
 import whisper
+
 # create a file "private_secrets.py" in the root directory
 # Store your Twitch "client_id", "client_secret", and "databaseIPV4"
 from questdb.ingress import IngressError, Sender
@@ -17,7 +18,7 @@ from twitchrealtimehandler import TwitchAudioGrabber
 # Copy the line and change username to add streamers
 # Username should be preceded by "#"
 streams = {
-    '#moonmoon': {'stream': None, 'is_live': False, 'prev_transcript': '', 'prev_transcript_time': datetime.datetime.now(), 'NO_SPEECH_PROB': 0.5},
+    "#moonmoon": {"stream": None, "is_live": False, "prev_transcript": "", "prev_transcript_time": datetime.datetime.now(), "NO_SPEECH_PROB": 0.5},
     # '#new_username': {'stream': None, 'is_live': False, 'start_time': None}
 }
 
@@ -40,11 +41,11 @@ while True:
         print("Read Timeout. Retrying...")
         continue
 
-token = r1.json()['access_token']
+token = r1.json()["access_token"]
 
 h = {
     "Client-Id": CLIENT_ID,
-    "Authorization": f'Bearer {token}'
+    "Authorization": f"Bearer {token}",
 }
 
 # Whisper settings
@@ -59,10 +60,10 @@ LAST_CHECK = 0
 
 
 def format_transcript(text: str) -> str:
-    output = " ".join(re.sub(r'([.?!])', r'\1 ', text, flags=re.IGNORECASE).split())  # Ensure that all punctuation is followed by a space
-    output = re.sub(r'\.\s+\.\s+\.','...', output, flags=re.IGNORECASE)  # strip whitespace between ellipses (created from above line)
-    output = re.sub(r's\*\*\*|s\*\*t', 'shit', output, flags=re.IGNORECASE)  # uncensor "s***" or "s**t"
-    output = re.sub(r'f\*\*\*|f\*\*k', 'fuck', output, flags=re.IGNORECASE)  # uncensor "f***" or "f**k"
+    output = " ".join(re.sub(r"([.?!])", r"\1 ", text, flags=re.IGNORECASE).split())  # Ensure that all punctuation is followed by a space
+    output = re.sub(r"\.\s+\.\s+\.","...", output, flags=re.IGNORECASE)  # strip whitespace between ellipses (created from above line)
+    output = re.sub(r"s\*\*\*|s\*\*t", "shit", output, flags=re.IGNORECASE)  # uncensor "s***" or "s**t"
+    output = re.sub(r"f\*\*\*|f\*\*k", "fuck", output, flags=re.IGNORECASE)  # uncensor "f***" or "f**k"
     return output
 
 
@@ -71,19 +72,19 @@ def send_transcript(data, host: str = private_secrets.databaseIPV4, port: int = 
     try:
         with Sender(host, port) as sender:
             sender.row(
-                'transcripts',  # table name
+                "transcripts",  # table name
                 symbols={
-                    'stream_name': str(data['stream_name']),
+                    "stream_name": str(data["stream_name"]),
                 },
                 columns={
-                    'transcript': data['transcript']
+                    "transcript": data["transcript"],
                 },
-                at=data['ts']
+                at=data["ts"],
             )
             sender.flush()
 
     except IngressError as error:
-        sys.stderr.write(f'Got error: {error}\n')
+        sys.stderr.write(f"Got error: {error}\n")
 
 
 if __name__ == "__main__":
@@ -98,51 +99,51 @@ if __name__ == "__main__":
                     r = requests.get(api_url, headers=h, timeout=10)  # GET stream status. Will return {'data': []} if not live
                     r = r.json()
                 except requests.exceptions.ReadTimeout:
-                    r = {'data': []}
+                    r = {"data": []}
                     continue
-                if len(r['data']) > 0:
+                if len(r["data"]) > 0:
                     # Assign stream start time
-                    start_time = datetime.datetime.strptime(r['data'][0]['started_at'], '%Y-%m-%dT%H:%M:%SZ')
+                    start_time = datetime.datetime.strptime(r["data"][0]["started_at"], "%Y-%m-%dT%H:%M:%SZ")
                     # Offset start time to local timezone
                     start_time = start_time + datetime.timedelta(hours=-6)  # change this to your UTC offset (negative = western hemisphere)
-                    stream['start_time'] = start_time
+                    stream["start_time"] = start_time
                     # Handle stream going from "Not Live" -> "Live"
-                    if not stream['is_live']:
-                        stream['is_live'] = True
-                        stream['stream'] = TwitchAudioGrabber(
+                    if not stream["is_live"]:
+                        stream["is_live"] = True
+                        stream["stream"] = TwitchAudioGrabber(
                             twitch_url=stream_url,
                             blocking=True,  # wait until a segment is available
                             segment_length=10,  # segment length in seconds
                             rate=16000,  # sampling rate of the audio
                             channels=1,  # number of channels
                             # quality of the audio could be [np.int16, np.int32, np.float32, np.float64]
-                            dtype=np.int16
+                            dtype=np.int16,
                         )
                 # Handle stream going from "Live" -> "Not Live"
-                elif stream['is_live']:  # Extra logic to prevent unnecessary assignments
-                    stream['is_live'] = False
-                    stream['stream'] = None
-                    stream['start_time'] = None
+                elif stream["is_live"]:  # Extra logic to prevent unnecessary assignments
+                    stream["is_live"] = False
+                    stream["stream"] = None
+                    stream["start_time"] = None
 
         # Loop through streams, capture 10 seconds of audio from the ones which are live
         for key, stream in streams.items():
-            if stream['is_live']:
+            if stream["is_live"]:
                 # Assign transcript time at start of function to avoid delay due to Whisper compute time
                 transcript_time = datetime.datetime.now()
 
                 #  Sometimes the whisper model will get stuck producing no transcription.
                 #  In these cases, we turn up the no speech threshold to try and reel it back in
-                if transcript_time - stream['prev_transcript_time'] > datetime.timedelta(minutes=4):
-                    stream['NO_SPEECH_PROB'] = 0.8
-                elif stream['NO_SPEECH_PROB'] == 0.8:
+                if transcript_time - stream["prev_transcript_time"] > datetime.timedelta(minutes=4):
+                    stream["NO_SPEECH_PROB"] = 0.8
+                elif stream["NO_SPEECH_PROB"] == 0.8:
                     #  After the model starts producing again, reset the no_speech_threshold to its default value
-                    stream['NO_SPEECH_PROB'] = 0.5
+                    stream["NO_SPEECH_PROB"] = 0.5
 
                 # Compute relative timestamp. Assign microseconds to 0
-                transcript_offset = transcript_time - stream['start_time']
+                transcript_offset = transcript_time - stream["start_time"]
                 transcript_offset = transcript_offset - datetime.timedelta(microseconds=transcript_time.microsecond)
 
-                indata = stream['stream'].grab()  # Grab stream audio data
+                indata = stream["stream"].grab()  # Grab stream audio data
                 indata_transformed = indata.flatten().astype(np.float32) / 32768.0  # Idk why this is necessary, but it is
 
                 # Adjust input prompt to help model capture edge-case words (Twitch emotes, in-game terms, etc.)
@@ -150,8 +151,8 @@ if __name__ == "__main__":
                                  f"and respond to messages sent in their chat. They also make sound affects with their mouth." \
                                  f"Do not censor any words that are said, except for racial slurs. They are also very casual in their speech." \
                                  f"There will often be gameplay sounds in the background - avoid transcribing these to the best of your ability."
-                transcript = model.transcribe(indata_transformed, language=LANGUAGE, initial_prompt=initial_prompt, no_speech_threshold=stream['NO_SPEECH_PROB'], logprob_threshold=None, fp16=False)
-                start_datetime = stream['start_time']
+                transcript = model.transcribe(indata_transformed, language=LANGUAGE, initial_prompt=initial_prompt, no_speech_threshold=stream["NO_SPEECH_PROB"], logprob_threshold=None, fp16=False)
+                start_datetime = stream["start_time"]
                 # Join relative stream timestamp with the year-month-date from the start time
                 db_time = datetime.datetime(year=start_datetime.year, month=start_datetime.month, day=start_datetime.day, hour=transcript_offset.seconds//3600, minute=(transcript_offset.seconds//60)%60, second=(transcript_offset.seconds%3600)%60, microsecond=0, tzinfo=pytz.utc)
                 db_time = db_time + datetime.timedelta(hours=-6)  # Again, adjust this to your UTC offset
@@ -159,17 +160,17 @@ if __name__ == "__main__":
                 # Add any transcription filtering in this if statement.
                 # e.g. Filter racial slurs, remove Whisper hallucinations (google it)
                 CLEAN = True
-                if transcript['text'] != "" and transcript['text'] not in stream['prev_transcript']:
+                if transcript["text"] and transcript["text"] not in stream["prev_transcript"]:
                     for i in censored_words.CENSOR_WORDS:  # there's probably a better way to do this, maybe with regex?
-                        if i in transcript['text'].lower():  # want to ensure that censorship is case-insensitive
+                        if i in transcript["text"].lower():  # want to ensure that censorship is case-insensitive
                             CLEAN = False
                             break
                     if CLEAN:
-                        stream['prev_transcript'] = transcript['text']
-                        stream['prev_transcript_time'] = transcript_time
-                        formatted_text = format_transcript(transcript['text'])
+                        stream["prev_transcript"] = transcript["text"]
+                        stream["prev_transcript_time"] = transcript_time
+                        formatted_text = format_transcript(transcript["text"])
                         # Print result for visualization. Recommend comment out for production deployment
                         # print({'ts': db_time, 'stream_name': key, 'transcript': transcript['text']})
                         # Send transcription to database. If no database configured, comment line out
-                        send_transcript({'ts': db_time, 'stream_name': key, 'transcript': formatted_text})
+                        send_transcript({"ts": db_time, "stream_name": key, "transcript": formatted_text})
 
