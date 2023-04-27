@@ -81,7 +81,7 @@ def send_transcript(data, host: str = private_secrets.databaseIPV4, port: int = 
                 },
                 at=data["ts"],
             )
-            sender.flush()
+            # sender.flush()
 
     except IngressError as error:
         sys.stderr.write(f"Got error: {error}\n")
@@ -98,7 +98,7 @@ if __name__ == "__main__":
                 try:
                     r = requests.get(api_url, headers=h, timeout=10)  # GET stream status. Will return {'data': []} if not live
                     r = r.json()
-                except requests.exceptions.ReadTimeout:
+                except requests.exceptions.ReadTimeout or requests.exceptions.RequestException:
                     r = {"data": []}
                     continue
                 if len(r["data"]) > 0:
