@@ -98,7 +98,7 @@ if __name__ == "__main__":
                 try:
                     r = requests.get(api_url, headers=h, timeout=10)  # GET stream status. Will return {'data': []} if not live
                     r = r.json()
-                except requests.exceptions.ReadTimeout or requests.exceptions.RequestException:
+                except requests.exceptions.ReadTimeout or requests.exceptions.RequestException or requests.exceptions.ConnectTimeout:
                     r = {"data": []}
                     continue
                 if len(r["data"]) > 0:
